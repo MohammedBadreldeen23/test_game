@@ -1,16 +1,10 @@
-// filepath: /home/mohamed/APP/test_game/lib/quations.dart
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import 'app_theme.dart';
 import 'question_brain.dart';
-
-const Color _emerald = Color(0xFF087F5B);
-const Color _deepGreen = Color(0xFF064E3B);
-const Color _gold = Color(0xFFD4AF37);
-const Color _warmWhite = Color(0xFFFAFAF5);
-const Color _lightBackground = Color(0xFFF3F6F2);
-const Color _darkText = Color(0xFF1F2937);
 
 QuestionBrain questionBrain = QuestionBrain();
 
@@ -25,29 +19,25 @@ class _HomeState extends State<Home> {
   int correctAnswersCount = 0;
   int answeredQuestions = 0;
   bool _answeredCurrentQuestion = false;
+  String? _selectedAnswer;
 
-  void checkAnswer({required String selectedOption}) {
+  // ✅ الإجابة: نلوّن الإجابة ونتيح زر "التالي"
+  void _handleAnswer(String option) {
     if (_answeredCurrentQuestion) return;
+    HapticFeedback.lightImpact();
 
-    _answeredCurrentQuestion = true;
-    final isCorrect = selectedOption == questionBrain.getQuestionCorrect();
+    final isCorrect = option == questionBrain.getQuestionCorrect();
 
     setState(() {
+      _answeredCurrentQuestion = true;
+      _selectedAnswer = option;
       answeredQuestions++;
       if (isCorrect) correctAnswersCount++;
-
-      answerResults.add(
-        Padding(
-          padding: const EdgeInsets.all(3),
-          child: Icon(
-            isCorrect ? Icons.check_circle : Icons.cancel,
-            color: isCorrect ? _emerald : Colors.redAccent,
-            semanticLabel: isCorrect ? 'إجابة صحيحة' : 'إجابة خاطئة',
-          ),
-        ),
-      );
     });
+  }
 
+  // ✅ الانتقال للسؤال التالي أو النتيجة
+  void _goToNext() {
     if (questionBrain.isFinished()) {
       final total = questionBrain.totalQuestions;
       final percentage = total == 0 ? 0.0 : correctAnswersCount / total * 100;
@@ -65,10 +55,11 @@ class _HomeState extends State<Home> {
     }
 
     questionBrain.nextQuestion();
-    setState(() => _answeredCurrentQuestion = false);
+    setState(() {
+      _answeredCurrentQuestion = false;
+      _selectedAnswer = null;
+    });
   }
-
-  final List<Widget> answerResults = [];
 
   @override
   Widget build(BuildContext context) {
@@ -88,159 +79,45 @@ class _HomeState extends State<Home> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: _lightBackground,
+        backgroundColor: lightBackground,
         appBar: AppBar(
-          title: const Text('اختبار ديني'),
-          backgroundColor: _deepGreen,
+          title: Text(
+            'اختبار ديني',
+            style: cairo(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: deepGreen,
           foregroundColor: Colors.white,
           centerTitle: true,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.home_outlined),
+              tooltip: 'الرئيسية',
+              onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+            ),
+          ],
         ),
         body: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               return SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - 32,
+                    minHeight: constraints.maxHeight - 40,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Card(
-                        color: _warmWhite,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(18),
-                          child: Column(
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'السؤال $questionNumber من $total',
-                                    style: const TextStyle(
-                                      color: _darkText,
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${(progress * 100).toStringAsFixed(1)}%',
-                                    style: const TextStyle(
-                                      color: _emerald,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: LinearProgressIndicator(
-                                  value: progress,
-                                  minHeight: 10,
-                                  backgroundColor: const Color(0xFFE2E8E2),
-                                  valueColor: const AlwaysStoppedAnimation(
-                                    _emerald,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(spacing: 2, children: answerResults),
-                      Card(
-                        color: _warmWhite,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: Image.asset(
-                                  questionBrain.getQestionImage(),
-                                  height: 190,
-                                  width: double.infinity,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (_, __, ___) => const SizedBox(
-                                    height: 190,
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.mosque,
-                                        size: 64,
-                                        color: _emerald,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              Text(
-                                questionBrain.getQestion(),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: _darkText,
-                                  fontSize: 21,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1.5,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...options.map(
-                        (option) => Padding(
-                          padding: const EdgeInsets.only(bottom: 10),
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _answeredCurrentQuestion
-                                  ? null
-                                  : () => checkAnswer(selectedOption: option),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.white,
-                                foregroundColor: _deepGreen,
-                                disabledForegroundColor: _deepGreen,
-                                disabledBackgroundColor: Colors.white,
-                                elevation: 1,
-                                alignment: Alignment.centerRight,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 16,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                  side: const BorderSide(
-                                    color: Color(0xFFDDE7DF),
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                option,
-                                textAlign: TextAlign.right,
-                                style: const TextStyle(
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                      _buildProgressCard(questionNumber, total, progress),
+                      const SizedBox(height: 14),
+                      _buildQuestionCard(questionNumber),
+                      const SizedBox(height: 16),
+                      ...options.map(_buildOption),
                     ],
                   ),
                 ),
@@ -248,24 +125,256 @@ class _HomeState extends State<Home> {
             },
           ),
         ),
-        bottomNavigationBar: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-          child: OutlinedButton.icon(
-            onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            icon: const Icon(Icons.home_outlined),
-            label: const Text('الرئيسية'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: _deepGreen,
-              minimumSize: const Size.fromHeight(52),
-              side: const BorderSide(color: _emerald),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        // ✅ زر "التالي/عرض النتيجة" يظهر بعد الإجابة فقط
+        bottomNavigationBar: _answeredCurrentQuestion
+            ? SafeArea(
+                minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      HapticFeedback.selectionClick();
+                      _goToNext();
+                    },
+                    icon: Icon(
+                      questionBrain.isFinished()
+                          ? Icons.flag_outlined
+                          : Icons.arrow_back,
+                      size: 22,
+                    ),
+                    label: Text(
+                      questionBrain.isFinished()
+                          ? 'عرض النتيجة'
+                          : 'السؤال التالي',
+                      style: cairo(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: emerald,
+                      foregroundColor: Colors.white,
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            : null,
+      ),
+    );
+  }
+
+  // 🟩 بطاقة التقدم
+  Widget _buildProgressCard(int questionNumber, int total, double progress) {
+    return Card(
+      color: warmWhite,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'السؤال $questionNumber من $total',
+                  style: cairo(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: darkText,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: emerald.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle, size: 16, color: emerald),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$correctAnswersCount',
+                        style: cairo(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: emerald,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: progress),
+                duration: const Duration(milliseconds: 450),
+                builder: (context, value, _) => LinearProgressIndicator(
+                  value: value,
+                  minHeight: 10,
+                  backgroundColor: const Color(0xFFE2E8E2),
+                  valueColor: const AlwaysStoppedAnimation(emerald),
+                ),
               ),
-              textStyle: const TextStyle(
-                fontSize: 17,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🟩 بطاقة السؤال (رقم دائري بدل الصورة)
+  Widget _buildQuestionCard(int questionNumber) {
+    return Card(
+      color: warmWhite,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                // 🔢 رقم السؤال (بديل صورة Q*.png)
+                Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const LinearGradient(
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                      colors: [emerald, deepGreen],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: emerald.withOpacity(0.35),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      '$questionNumber',
+                      style: cairo(
+                        fontSize: 23,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    'السؤال رقم $questionNumber',
+                    style: cairo(
+                      fontSize: 15,
+                      color: darkText.withOpacity(0.65),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(
+              questionBrain.getQestion(),
+              style: cairo(
+                fontSize: 21,
                 fontWeight: FontWeight.bold,
+                height: 1.6,
+                color: darkText,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 🟩 خيارات الإجابة مع تغذية راجعة بصرية واضحة
+  Widget _buildOption(String option) {
+    final isAnswered = _answeredCurrentQuestion;
+    final isCorrect = option == questionBrain.getQuestionCorrect();
+    final isSelected = option == _selectedAnswer;
+
+    Color bg, fg, border;
+    IconData? trailing;
+    double opacity = 1.0;
+
+    if (!isAnswered) {
+      bg = Colors.white;
+      fg = deepGreen;
+      border = const Color(0xFFDDE7DF);
+    } else if (isCorrect) {
+      bg = correctGreen;
+      fg = Colors.white;
+      border = correctGreen;
+      trailing = Icons.check_circle_outline;
+    } else if (isSelected) {
+      bg = wrongRed;
+      fg = Colors.white;
+      border = wrongRed;
+      trailing = Icons.highlight_off;
+    } else {
+      bg = Colors.white;
+      fg = darkText.withOpacity(0.55);
+      border = const Color(0xFFE5E7EB);
+      opacity = 0.6;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Opacity(
+        opacity: opacity,
+        child: Material(
+          color: bg,
+          borderRadius: BorderRadius.circular(16),
+          elevation: isAnswered ? 0 : 1,
+          shadowColor: Colors.black26,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: isAnswered ? null : () => _handleAnswer(option),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: border, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      option,
+                      textAlign: TextAlign.right,
+                      style: cairo(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color: fg,
+                      ),
+                    ),
+                  ),
+                  if (trailing != null) ...[
+                    const SizedBox(width: 10),
+                    Icon(trailing, color: fg, size: 24),
+                  ],
+                ],
               ),
             ),
           ),
@@ -275,6 +384,9 @@ class _HomeState extends State<Home> {
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// ⏳ شاشة تجهيز النتيجة (كما هي، تحسين بصري خفيف)
+// ═══════════════════════════════════════════════════════
 class _ResultPreparationScreen extends StatefulWidget {
   const _ResultPreparationScreen({
     required this.correctAnswers,
@@ -294,7 +406,7 @@ class _ResultPreparationScreen extends StatefulWidget {
 class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _fade;
   Timer? _timer;
 
   @override
@@ -304,10 +416,7 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
+    _fade = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _controller.repeat(reverse: true);
 
     _timer = Timer(const Duration(milliseconds: 1400), () {
@@ -336,29 +445,29 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: _deepGreen,
+        backgroundColor: deepGreen,
         body: Center(
           child: FadeTransition(
-            opacity: _fadeAnimation,
+            opacity: _fade,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.mosque, size: 84, color: _gold),
+                const Icon(Icons.mosque, size: 84, color: gold),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'اختبار ديني',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 25,
+                  style: amiri(
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
                 ),
                 const SizedBox(height: 28),
-                const CircularProgressIndicator(color: _gold),
+                const CircularProgressIndicator(color: gold),
                 const SizedBox(height: 18),
-                const Text(
+                Text(
                   'جاري تجهيز نتيجتك...',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+                  style: cairo(fontSize: 18, color: Colors.white),
                 ),
               ],
             ),
@@ -369,6 +478,9 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
   }
 }
 
+// ═══════════════════════════════════════════════════════
+// 🏆 شاشة النتيجة النهائية
+// ═══════════════════════════════════════════════════════
 class _QuizResultScreen extends StatelessWidget {
   const _QuizResultScreen({
     required this.correctAnswers,
@@ -381,11 +493,11 @@ class _QuizResultScreen extends StatelessWidget {
   final double percentage;
 
   String get evaluation {
-    if (percentage >= 90) return 'ممتاز!';
-    if (percentage >= 80) return 'جيد جداً!';
-    if (percentage >= 60) return 'جيد!';
-    if (percentage >= 40) return 'يمكنك التحسن!';
-    return 'لا تستسلم، حاول مرة أخرى!';
+    if (percentage >= 90) return 'ممتاز! ما شاء الله';
+    if (percentage >= 80) return 'جيد جدًا!';
+    if (percentage >= 60) return 'جيد، واصل التقدم';
+    if (percentage >= 40) return 'يمكنك التحسن';
+    return 'لا تستسلم، حاول مرة أخرى';
   }
 
   void _restart(BuildContext context) {
@@ -404,7 +516,7 @@ class _QuizResultScreen extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        backgroundColor: _lightBackground,
+        backgroundColor: lightBackground,
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -412,7 +524,7 @@ class _QuizResultScreen extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Card(
-                  color: _warmWhite,
+                  color: warmWhite,
                   elevation: 3,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
@@ -422,27 +534,28 @@ class _QuizResultScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.mosque, size: 60, color: _emerald),
+                        const Icon(Icons.mosque, size: 60, color: emerald),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'اختبار ديني',
-                          style: TextStyle(
-                            color: _deepGreen,
-                            fontSize: 20,
+                          style: amiri(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
+                            color: deepGreen,
                           ),
                         ),
                         const SizedBox(height: 18),
-                        const Text(
+                        Text(
                           'أحسنت! لقد أكملت المسابقة',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _darkText,
-                            fontSize: 23,
+                          style: cairo(
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
+                            color: darkText,
                           ),
                         ),
                         const SizedBox(height: 22),
+                        // دائرة النسبة
                         SizedBox(
                           width: 150,
                           height: 150,
@@ -455,16 +568,16 @@ class _QuizResultScreen extends StatelessWidget {
                                   strokeWidth: 12,
                                   backgroundColor: const Color(0xFFE2E8E2),
                                   valueColor: const AlwaysStoppedAnimation(
-                                    _emerald,
+                                    emerald,
                                   ),
                                 ),
                               ),
                               Text(
                                 '${percentage.toStringAsFixed(1)}%',
-                                style: const TextStyle(
-                                  color: _deepGreen,
-                                  fontSize: 25,
+                                style: cairo(
+                                  fontSize: 26,
                                   fontWeight: FontWeight.bold,
+                                  color: deepGreen,
                                 ),
                               ),
                             ],
@@ -473,17 +586,30 @@ class _QuizResultScreen extends StatelessWidget {
                         const SizedBox(height: 18),
                         Text(
                           evaluation,
-                          style: const TextStyle(
-                            color: _emerald,
-                            fontSize: 22,
+                          textAlign: TextAlign.center,
+                          style: cairo(
+                            fontSize: 21,
                             fontWeight: FontWeight.bold,
+                            color: emerald,
                           ),
                         ),
-                        const SizedBox(height: 18),
-                        _scoreRow('الإجابات الصحيحة', correctAnswers),
-                        _scoreRow('الإجابات الخاطئة', incorrectAnswers),
-                        _scoreRow('مجموع الأسئلة', totalQuestions),
-                        const SizedBox(height: 22),
+                        const SizedBox(height: 20),
+                        _scoreRow(
+                          'الإجابات الصحيحة',
+                          correctAnswers,
+                          color: correctGreen,
+                        ),
+                        _scoreRow(
+                          'الإجابات الخاطئة',
+                          incorrectAnswers,
+                          color: wrongRed,
+                        ),
+                        _scoreRow(
+                          'مجموع الأسئلة',
+                          totalQuestions,
+                          color: darkText,
+                        ),
+                        const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -491,11 +617,21 @@ class _QuizResultScreen extends StatelessWidget {
                                 Navigator.of(context)
                                     .popUntil((route) => route.isFirst),
                             icon: const Icon(Icons.home_outlined),
-                            label: const Text('العودة للرئيسية'),
+                            label: Text(
+                              'العودة للرئيسية',
+                              style: cairo(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _deepGreen,
+                              backgroundColor: deepGreen,
                               foregroundColor: Colors.white,
                               minimumSize: const Size.fromHeight(52),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
                           ),
                         ),
@@ -505,11 +641,21 @@ class _QuizResultScreen extends StatelessWidget {
                           child: OutlinedButton.icon(
                             onPressed: () => _restart(context),
                             icon: const Icon(Icons.replay),
-                            label: const Text('إعادة المسابقة'),
+                            label: Text(
+                              'إعادة المسابقة',
+                              style: cairo(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: deepGreen,
+                              ),
+                            ),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: _deepGreen,
+                              foregroundColor: deepGreen,
                               minimumSize: const Size.fromHeight(52),
-                              side: const BorderSide(color: _emerald),
+                              side: const BorderSide(color: emerald),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
                           ),
                         ),
@@ -525,19 +671,19 @@ class _QuizResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _scoreRow(String label, int value) {
+  Widget _scoreRow(String label, int value, {required Color color}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 16, color: _darkText)),
+          Text(label, style: cairo(fontSize: 16, color: darkText)),
           Text(
             '$value',
-            style: const TextStyle(
-              color: _deepGreen,
-              fontSize: 17,
+            style: cairo(
+              fontSize: 18,
               fontWeight: FontWeight.bold,
+              color: color,
             ),
           ),
         ],
