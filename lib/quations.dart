@@ -16,36 +16,43 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  int correctAnswersCount = 0;
-  int answeredQuestions = 0;
   bool _answeredCurrentQuestion = false;
   String? _selectedAnswer;
 
-  // ✅ الإجابة: نلوّن الإجابة ونتيح زر "التالي"
+  @override
+  void initState() {
+    super.initState();
+    // ✅ استعادة الحالة عند العودة من شاشة الترحيب
+    _answeredCurrentQuestion = questionBrain.isCurrentAnswered();
+    _selectedAnswer = questionBrain.getSelectedAnswerForCurrent();
+  }
+
   void _handleAnswer(String option) {
     if (_answeredCurrentQuestion) return;
     HapticFeedback.lightImpact();
 
-    final isCorrect = option == questionBrain.getQuestionCorrect();
+    // ✅ يسجل الإجابة في العقل المركزي
+    questionBrain.recordAnswer(option);
 
     setState(() {
       _answeredCurrentQuestion = true;
       _selectedAnswer = option;
-      answeredQuestions++;
-      if (isCorrect) correctAnswersCount++;
     });
   }
 
-  // ✅ الانتقال للسؤال التالي أو النتيجة
   void _goToNext() {
     if (questionBrain.isFinished()) {
       final total = questionBrain.totalQuestions;
-      final percentage = total == 0 ? 0.0 : correctAnswersCount / total * 100;
+      final correct = questionBrain.correctAnswersCount;
+      final percentage = total == 0 ? 0.0 : correct / total * 100;
+
+      // تصفير العقل بعد الانتهاء ليبدأ الاختبار الجديد نظيفاً
+      questionBrain.reset();
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => _ResultPreparationScreen(
-            correctAnswers: correctAnswersCount,
+            correctAnswers: correct,
             totalQuestions: total,
             percentage: percentage,
           ),
@@ -56,8 +63,8 @@ class _HomeState extends State<Home> {
 
     questionBrain.nextQuestion();
     setState(() {
-      _answeredCurrentQuestion = false;
-      _selectedAnswer = null;
+      _answeredCurrentQuestion = questionBrain.isCurrentAnswered();
+      _selectedAnswer = questionBrain.getSelectedAnswerForCurrent();
     });
   }
 
@@ -67,7 +74,7 @@ class _HomeState extends State<Home> {
     final questionNumber = questionBrain.questionIndex + 1;
     final progress = total == 0
         ? 0.0
-        : (answeredQuestions / total).clamp(0.0, 1.0);
+        : (questionBrain.answeredQuestions / total).clamp(0.0, 1.0);
 
     final options = [
       questionBrain.getQestionOptin1(),
@@ -97,7 +104,8 @@ class _HomeState extends State<Home> {
             IconButton(
               icon: const Icon(Icons.home_outlined),
               tooltip: 'الرئيسية',
-              onPressed: () => Navigator.of(context).popUntil((r) => r.isFirst),
+              onPressed: () =>
+                  Navigator.of(context).popUntil((r) => r.isFirst),
             ),
           ],
         ),
@@ -116,6 +124,7 @@ class _HomeState extends State<Home> {
                       _buildProgressCard(questionNumber, total, progress),
                       const SizedBox(height: 14),
                       _buildQuestionCard(questionNumber),
+                      _buildFeedbackBanner(),
                       const SizedBox(height: 16),
                       ...options.map(_buildOption),
                     ],
@@ -125,7 +134,6 @@ class _HomeState extends State<Home> {
             },
           ),
         ),
-        // ✅ زر "التالي/عرض النتيجة" يظهر بعد الإجابة فقط
         bottomNavigationBar: _answeredCurrentQuestion
             ? SafeArea(
                 minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
@@ -168,7 +176,6 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // 🟩 بطاقة التقدم
   Widget _buildProgressCard(int questionNumber, int total, double progress) {
     return Card(
       color: warmWhite,
@@ -190,10 +197,8 @@ class _HomeState extends State<Home> {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: emerald.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(14),
@@ -203,8 +208,9 @@ class _HomeState extends State<Home> {
                     children: [
                       const Icon(Icons.check_circle, size: 16, color: emerald),
                       const SizedBox(width: 4),
+                      // ✅ يُقرأ من العقل المركزي ولا يتأثر بالرجوع
                       Text(
-                        '$correctAnswersCount',
+                        '${questionBrain.correctAnswersCount}',
                         style: cairo(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -236,7 +242,6 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // 🟩 بطاقة السؤال (رقم دائري بدل الصورة)
   Widget _buildQuestionCard(int questionNumber) {
     return Card(
       color: warmWhite,
@@ -249,7 +254,6 @@ class _HomeState extends State<Home> {
           children: [
             Row(
               children: [
-                // 🔢 رقم السؤال (بديل صورة Q*.png)
                 Container(
                   width: 58,
                   height: 58,
@@ -308,7 +312,49 @@ class _HomeState extends State<Home> {
     );
   }
 
-  // 🟩 خيارات الإجابة مع تغذية راجعة بصرية واضحة
+  Widget _buildFeedbackBanner() {
+    if (!_answeredCurrentQuestion) return const SizedBox.shrink();
+
+    final isCorrect = _selectedAnswer == questionBrain.getQuestionCorrect();
+    final accentColor = isCorrect ? correctGreen : wrongRed;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: accentColor.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: accentColor.withOpacity(0.35), width: 1.2),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
+              color: accentColor,
+              size: 24,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                isCorrect
+                    ? 'إجابة صحيحة! أحسنت'
+                    : 'إجابة خاطئة. الصحيح: ${questionBrain.getQuestionCorrect()}',
+                style: cairo(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: accentColor,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildOption(String option) {
     final isAnswered = _answeredCurrentQuestion;
     final isCorrect = option == questionBrain.getQuestionCorrect();
@@ -336,45 +382,58 @@ class _HomeState extends State<Home> {
       bg = Colors.white;
       fg = darkText.withOpacity(0.55);
       border = const Color(0xFFE5E7EB);
-      opacity = 0.6;
+      opacity = 0.55;
     }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Opacity(
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
         opacity: opacity,
-        child: Material(
-          color: bg,
-          borderRadius: BorderRadius.circular(16),
-          elevation: isAnswered ? 0 : 1,
-          shadowColor: Colors.black26,
-          child: InkWell(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          decoration: BoxDecoration(
+            color: bg,
             borderRadius: BorderRadius.circular(16),
-            onTap: isAnswered ? null : () => _handleAnswer(option),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: border, width: 1.5),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      option,
-                      textAlign: TextAlign.right,
-                      style: cairo(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w600,
-                        color: fg,
+            border: Border.all(color: border, width: 1.5),
+            boxShadow: isAnswered
+                ? const []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(16),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: isAnswered ? null : () => _handleAnswer(option),
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        option,
+                        textAlign: TextAlign.right,
+                        style: cairo(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: fg,
+                        ),
                       ),
                     ),
-                  ),
-                  if (trailing != null) ...[
-                    const SizedBox(width: 10),
-                    Icon(trailing, color: fg, size: 24),
+                    if (trailing != null) ...[
+                      const SizedBox(width: 10),
+                      Icon(trailing, color: fg, size: 24),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),
@@ -384,9 +443,6 @@ class _HomeState extends State<Home> {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// ⏳ شاشة تجهيز النتيجة (كما هي، تحسين بصري خفيف)
-// ═══════════════════════════════════════════════════════
 class _ResultPreparationScreen extends StatefulWidget {
   const _ResultPreparationScreen({
     required this.correctAnswers,
@@ -467,7 +523,10 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
                 const SizedBox(height: 18),
                 Text(
                   'جاري تجهيز نتيجتك...',
-                  style: cairo(fontSize: 18, color: Colors.white),
+                  style: cairo(
+                    fontSize: 18,
+                    color: Colors.white,
+                  ),
                 ),
               ],
             ),
@@ -478,9 +537,6 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// 🏆 شاشة النتيجة النهائية
-// ═══════════════════════════════════════════════════════
 class _QuizResultScreen extends StatelessWidget {
   const _QuizResultScreen({
     required this.correctAnswers,
@@ -562,7 +618,6 @@ class _QuizResultScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(height: 22),
-                        // دائرة النسبة
                         SizedBox(
                           width: 150,
                           height: 150,
@@ -573,10 +628,10 @@ class _QuizResultScreen extends StatelessWidget {
                                 child: CircularProgressIndicator(
                                   value: safePercentage,
                                   strokeWidth: 12,
-                                  backgroundColor: const Color(0xFFE2E8E2),
+                                  backgroundColor:
+                                      const Color(0xFFE2E8E2),
                                   valueColor: const AlwaysStoppedAnimation(
-                                    emerald,
-                                  ),
+                                      emerald),
                                 ),
                               ),
                               Text(
@@ -600,41 +655,36 @@ class _QuizResultScreen extends StatelessWidget {
                             color: emerald,
                           ),
                         ),
-
-                        // ⭐⭐⭐ النجوم — هنا بالضبط
+                        // ✅ النجوم هنا
                         const SizedBox(height: 14),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(3, (i) {
                             return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 3,
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 3),
                               child: Icon(
                                 i < starCount
                                     ? Icons.star_rounded
                                     : Icons.star_outline_rounded,
-                                color: i < starCount
-                                    ? gold
-                                    : Colors.grey.shade300,
+                                color: i < starCount ? gold : Colors.grey.shade300,
                                 size: 38,
                               ),
                             );
                           }),
                         ),
-
                         const SizedBox(height: 20),
-                        _scoreRow(
-                          'الإجابات الصحيحة',
-                          correctAnswers,
-                          color: correctGreen,
-                        ),
+                        _scoreRow('الإجابات الصحيحة', correctAnswers,
+                            color: correctGreen),
+                        _scoreRow('الإجابات الخاطئة', incorrectAnswers,
+                            color: wrongRed),
+                        _scoreRow('مجموع الأسئلة', totalQuestions,
+                            color: darkText),
+                        const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
-                            onPressed: () =>
-                                Navigator.of(context)
-                                    .popUntil((route) => route.isFirst),
+                            onPressed: () => Navigator.of(context)
+                                .popUntil((route) => route.isFirst),
                             icon: const Icon(Icons.home_outlined),
                             label: Text(
                               'العودة للرئيسية',
@@ -696,7 +746,10 @@ class _QuizResultScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: cairo(fontSize: 16, color: darkText)),
+          Text(
+            label,
+            style: cairo(fontSize: 16, color: darkText),
+          ),
           Text(
             '$value',
             style: cairo(
