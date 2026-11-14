@@ -500,6 +500,13 @@ class _QuizResultScreen extends StatelessWidget {
     return 'لا تستسلم، حاول مرة أخرى';
   }
 
+  int get starCount {
+    if (percentage >= 90) return 3;
+    if (percentage >= 60) return 2;
+    if (percentage >= 40) return 1;
+    return 0;
+  }
+
   void _restart(BuildContext context) {
     questionBrain.reset();
     Navigator.of(context).pushAndRemoveUntil(
@@ -593,23 +600,35 @@ class _QuizResultScreen extends StatelessWidget {
                             color: emerald,
                           ),
                         ),
+
+                        // ⭐⭐⭐ النجوم — هنا بالضبط
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(3, (i) {
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 3,
+                              ),
+                              child: Icon(
+                                i < starCount
+                                    ? Icons.star_rounded
+                                    : Icons.star_outline_rounded,
+                                color: i < starCount
+                                    ? gold
+                                    : Colors.grey.shade300,
+                                size: 38,
+                              ),
+                            );
+                          }),
+                        ),
+
                         const SizedBox(height: 20),
                         _scoreRow(
                           'الإجابات الصحيحة',
                           correctAnswers,
                           color: correctGreen,
                         ),
-                        _scoreRow(
-                          'الإجابات الخاطئة',
-                          incorrectAnswers,
-                          color: wrongRed,
-                        ),
-                        _scoreRow(
-                          'مجموع الأسئلة',
-                          totalQuestions,
-                          color: darkText,
-                        ),
-                        const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(

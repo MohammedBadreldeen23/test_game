@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import 'quations.dart';
 import 'app_theme.dart';
+
 import 'package:google_fonts/google_fonts.dart';
+
 void main() {
   runApp(const Exzam());
 }
@@ -16,11 +19,11 @@ class Exzam extends StatelessWidget {
       title: 'اختبار ديني',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-  useMaterial3: true,
-  colorScheme: ColorScheme.fromSeed(seedColor: emerald),
-  scaffoldBackgroundColor: lightBackground,
-  textTheme: GoogleFonts.cairoTextTheme(),  // ← يفعّل Cairo كنص افتراضي
-),
+        useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(seedColor: emerald),
+        scaffoldBackgroundColor: lightBackground,
+        textTheme: GoogleFonts.cairoTextTheme(), // ← يفعّل Cairo كنص افتراضي
+      ),
       home: const ExamPage(),
     );
   }
@@ -66,10 +69,7 @@ class _ExamPageState extends State<ExamPage>
     _slide = Tween<Offset>(
       begin: const Offset(0, 0.15),
       end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeOutCubic,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
   }
 
   @override
@@ -102,7 +102,9 @@ class _ExamPageState extends State<ExamPage>
                 child: Center(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 28, vertical: 32),
+                      horizontal: 28,
+                      vertical: 32,
+                    ),
                     child: FadeTransition(
                       opacity: _fade,
                       child: SlideTransition(
@@ -126,8 +128,11 @@ class _ExamPageState extends State<ExamPage>
                                   ),
                                 ],
                               ),
-                              child: const Icon(Icons.mosque,
-                                  size: 64, color: gold),
+                              child: const Icon(
+                                Icons.mosque,
+                                size: 64,
+                                color: gold,
+                              ),
                             ),
                             const SizedBox(height: 32),
                             Text(
@@ -166,8 +171,7 @@ class _ExamPageState extends State<ExamPage>
                               children: [
                                 _infoChip(Icons.help_outline, '30 سؤالًا'),
                                 _infoChip(Icons.school_outlined, 'متنوع وشامل'),
-                                _infoChip(
-                                    Icons.timer_outlined, '10–15 دقيقة'),
+                                _infoChip(Icons.timer_outlined, '10–15 دقيقة'),
                               ],
                             ),
                             const SizedBox(height: 42),
@@ -188,15 +192,18 @@ class _ExamPageState extends State<ExamPage>
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: gold,
                                   foregroundColor: deepGreen,
-                                  elevation: 10,
-                                  shadowColor: gold.withOpacity(0.5),
+                                  elevation: 12,
+                                  shadowColor: gold.withOpacity(0.55),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  side: BorderSide(
+                                    color: Colors.white.withOpacity(0.25),
+                                    width: 1.2,
                                   ),
                                 ),
                                 child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.center,
+                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
                                       'ابدأ الاختبار',
@@ -235,8 +242,7 @@ class _ExamPageState extends State<ExamPage>
 
   Widget _infoChip(IconData icon, String text) {
     return Container(
-      padding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.10),
         borderRadius: BorderRadius.circular(22),
@@ -293,10 +299,7 @@ class _IslamicPatternPainter extends CustomPainter {
     path.close();
     canvas.drawPath(path, p);
     // مربع مستقيم متراكب
-    canvas.drawRect(
-      Rect.fromCenter(center: c, width: r, height: r),
-      p,
-    );
+    canvas.drawRect(Rect.fromCenter(center: c, width: r, height: r), p);
   }
 
   @override
