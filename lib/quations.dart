@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'app_theme.dart';
+import 'audio_service.dart';
 import 'question_brain.dart';
 
 QuestionBrain questionBrain = QuestionBrain();
@@ -22,7 +23,6 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    // ✅ استعادة الحالة عند العودة من شاشة الترحيب
     _answeredCurrentQuestion = questionBrain.isCurrentAnswered();
     _selectedAnswer = questionBrain.getSelectedAnswerForCurrent();
   }
@@ -31,7 +31,15 @@ class _HomeState extends State<Home> {
     if (_answeredCurrentQuestion) return;
     HapticFeedback.lightImpact();
 
-    // ✅ يسجل الإجابة في العقل المركزي
+    final isCorrect = option == questionBrain.getQuestionCorrect();
+
+    // 🔊 تشغيل الصوت المناسب
+    if (isCorrect) {
+      AudioService.playCorrect();
+    } else {
+      AudioService.playWrong();
+    }
+
     questionBrain.recordAnswer(option);
 
     setState(() {
@@ -46,9 +54,9 @@ class _HomeState extends State<Home> {
       final correct = questionBrain.correctAnswersCount;
       final percentage = total == 0 ? 0.0 : correct / total * 100;
 
-      // تصفير العقل بعد الانتهاء ليبدأ الاختبار الجديد نظيفاً
       questionBrain.reset();
 
+      // 🎆 أطلق الألعاب النارية في شاشة تجهيز النتيجة
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => _ResultPreparationScreen(
@@ -101,6 +109,22 @@ class _HomeState extends State<Home> {
           centerTitle: true,
           elevation: 0,
           actions: [
+            // 🔊 زر كتم / تشغيل الصوت
+            ValueListenableBuilder<bool>(
+              valueListenable: AudioService.muted,
+              builder: (context, isMuted, _) {
+                return IconButton(
+                  tooltip: isMuted ? 'تشغيل الصوت' : 'كتم الصوت',
+                  icon: Icon(
+                    isMuted ? Icons.volume_off : Icons.volume_up,
+                  ),
+                  onPressed: () {
+                    AudioService.muted.value = !isMuted;
+                    HapticFeedback.selectionClick();
+                  },
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.home_outlined),
               tooltip: 'الرئيسية',
@@ -206,9 +230,9 @@ class _HomeState extends State<Home> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.check_circle, size: 16, color: emerald),
+                      const Icon(Icons.check_circle,
+                          size: 16, color: emerald),
                       const SizedBox(width: 4),
-                      // ✅ يُقرأ من العقل المركزي ولا يتأثر بالرجوع
                       Text(
                         '${questionBrain.correctAnswersCount}',
                         style: cairo(
@@ -443,6 +467,9 @@ class _HomeState extends State<Home> {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// ⏳ شاشة التجهيز — نُشغّل فيها الألعاب النارية
+// ═══════════════════════════════════════════════════════════
 class _ResultPreparationScreen extends StatefulWidget {
   const _ResultPreparationScreen({
     required this.correctAnswers,
@@ -468,6 +495,10 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
   @override
   void initState() {
     super.initState();
+
+    // 🎆 صوت الألعاب النارية يبدأ فورًا عند الوصول
+    AudioService.playFireworks();
+
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
@@ -523,10 +554,7 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
                 const SizedBox(height: 18),
                 Text(
                   'جاري تجهيز نتيجتك...',
-                  style: cairo(
-                    fontSize: 18,
-                    color: Colors.white,
-                  ),
+                  style: cairo(fontSize: 18, color: Colors.white),
                 ),
               ],
             ),
@@ -537,6 +565,9 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// 🏆 شاشة النتيجة النهائية (كما هي + نجوم)
+// ═══════════════════════════════════════════════════════════
 class _QuizResultScreen extends StatelessWidget {
   const _QuizResultScreen({
     required this.correctAnswers,
@@ -645,7 +676,27 @@ class _QuizResultScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 14),
+                        // ⭐ نجوم
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(3, (i) {
+                            return Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 3),
+                              child: Icon(
+                                i < starCount
+                                    ? Icons.star_rounded
+                                    : Icons.star_outline_rounded,
+                                color: i < starCount
+                                    ? gold
+                                    : Colors.grey.shade300,
+                                size: 38,
+                              ),
+                            );
+                          }),
+                        ),
+                        const SizedBox(height: 14),
                         Text(
                           evaluation,
                           textAlign: TextAlign.center,
@@ -654,23 +705,6 @@ class _QuizResultScreen extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                             color: emerald,
                           ),
-                        ),
-                        // ✅ النجوم هنا
-                        const SizedBox(height: 14),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(3, (i) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 3),
-                              child: Icon(
-                                i < starCount
-                                    ? Icons.star_rounded
-                                    : Icons.star_outline_rounded,
-                                color: i < starCount ? gold : Colors.grey.shade300,
-                                size: 38,
-                              ),
-                            );
-                          }),
                         ),
                         const SizedBox(height: 20),
                         _scoreRow('الإجابات الصحيحة', correctAnswers,
@@ -746,10 +780,7 @@ class _QuizResultScreen extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: cairo(fontSize: 16, color: darkText),
-          ),
+          Text(label, style: cairo(fontSize: 16, color: darkText)),
           Text(
             '$value',
             style: cairo(
