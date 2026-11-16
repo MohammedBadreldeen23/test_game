@@ -118,10 +118,10 @@ class _ExamPageState extends State<ExamPage>
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(color: gold, width: 3),
-                                color: Colors.white.withOpacity(0.08),
+                                color: Colors.white.withValues(alpha: 0.08),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: gold.withOpacity(0.35),
+                                    color: gold.withValues(alpha: 0.35),
                                     blurRadius: 32,
                                     spreadRadius: 4,
                                   ),
@@ -157,7 +157,7 @@ class _ExamPageState extends State<ExamPage>
                               textAlign: TextAlign.center,
                               style: cairo(
                                 fontSize: 17,
-                                color: Colors.white.withOpacity(0.88),
+                                color: Colors.white.withValues(alpha: 0.88),
                                 height: 1.6,
                               ),
                             ),
@@ -192,12 +192,12 @@ class _ExamPageState extends State<ExamPage>
                                   backgroundColor: gold,
                                   foregroundColor: deepGreen,
                                   elevation: 12,
-                                  shadowColor: gold.withOpacity(0.55),
+                                  shadowColor: gold.withValues(alpha: 0.55),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   side: BorderSide(
-                                    color: Colors.white.withOpacity(0.25),
+                                    color: Colors.white.withValues(alpha: 0.25),
                                     width: 1.2,
                                   ),
                                 ),
@@ -222,9 +222,24 @@ class _ExamPageState extends State<ExamPage>
                               'بسم الله الرحمن الرحيم',
                               style: amiri(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.65),
+                                color: Colors.white.withValues(alpha: 0.65),
                               ),
                             ),
+                            const SizedBox(height: 6),
+                            Text('جميع الحقوق محفوظة © 2026',
+                                style: cairo(
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                )
+                                ),
+                                const SizedBox(height: 4),
+                            Text('تم التطوير بواسطة: محمد بدر الدين البلال',
+                                style: cairo(
+                                  fontSize: 13,
+                                  color: Colors.white.withValues(alpha: 0.55),
+                                )
+                                ),
+                                
                           ],
                         ),
                       ),
@@ -243,9 +258,9 @@ class _ExamPageState extends State<ExamPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.10),
+        color: Colors.white.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.white.withOpacity(0.22)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -273,7 +288,7 @@ class _IslamicPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white.withOpacity(0.06)
+      ..color = Colors.white.withValues(alpha: 0.06)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
 

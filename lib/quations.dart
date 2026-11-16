@@ -224,7 +224,7 @@ class _HomeState extends State<Home> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: emerald.withOpacity(0.10),
+                    color: emerald.withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -290,7 +290,7 @@ class _HomeState extends State<Home> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: emerald.withOpacity(0.35),
+                        color: emerald.withValues(alpha: 0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -313,7 +313,7 @@ class _HomeState extends State<Home> {
                     'السؤال رقم $questionNumber',
                     style: cairo(
                       fontSize: 15,
-                      color: darkText.withOpacity(0.65),
+                      color: darkText.withValues(alpha: 0.65),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -348,9 +348,9 @@ class _HomeState extends State<Home> {
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: accentColor.withOpacity(0.10),
+          color: accentColor.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accentColor.withOpacity(0.35), width: 1.2),
+          border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1.2),
         ),
         child: Row(
           children: [
@@ -404,7 +404,7 @@ class _HomeState extends State<Home> {
       trailing = Icons.highlight_off;
     } else {
       bg = Colors.white;
-      fg = darkText.withOpacity(0.55);
+      fg = darkText.withValues(alpha: 0.55);
       border = const Color(0xFFE5E7EB);
       opacity = 0.55;
     }
@@ -424,7 +424,7 @@ class _HomeState extends State<Home> {
                 ? const []
                 : [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
