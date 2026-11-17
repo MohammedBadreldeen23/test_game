@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'quations.dart';
-import 'app_theme.dart';
-
 import 'package:google_fonts/google_fonts.dart';
 
-void main() {
+import 'quations.dart';
+import 'app_theme.dart';
+import 'audio_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // تحميل الأصوات مسبقًا
+  await AudioService.init();
+  
+  
+  // ✅ تشغيل التطبيق داخل MaterialApp
   runApp(const Exzam());
 }
 
+// ✅ كلاس التطبيق الرئيسي (يحتوي على MaterialApp)
 class Exzam extends StatelessWidget {
   const Exzam({super.key});
 
@@ -21,28 +30,27 @@ class Exzam extends StatelessWidget {
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(seedColor: emerald),
         scaffoldBackgroundColor: lightBackground,
-        textTheme: GoogleFonts.cairoTextTheme(), // ← يفعّل Cairo كنص افتراضي
+        textTheme: GoogleFonts.cairoTextTheme(),
       ),
+      // يمكنك إزالة التعليق عن builder إذا أردت شكل الهاتف على الويب
+      // لكن تأكد من إزالة أي MaterialApp آخر في المشروع
+      /*
+      builder: (context, child) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: child!,
+          ),
+        );
+      },
+      */
       home: const ExamPage(),
     );
   }
 }
 
-// مساعد بسيط لتطبيق خط Cairo افتراضيًا
-class GoogleFontsCairoHelper {
-  static String? get fontFamily => GoogleFontsProxy.cairoFamily;
-}
-
-// استخدمنا هذا للفصل حتى لا يكسر بناء الثيم
-class GoogleFontsProxy {
-  static String? get cairoFamily {
-    // نرجع اسم عائلة Cairo الذي تسجله google_fonts
-    return 'Cairo';
-  }
-}
-
 // ═══════════════════════════════════════════════════════
-// 🕌 شاشة الترحيب (Welcome)
+// 🕌 شاشة الترحيب (Welcome) — تبقى كما هي
 // ═══════════════════════════════════════════════════════
 class ExamPage extends StatefulWidget {
   const ExamPage({super.key});
@@ -226,20 +234,21 @@ class _ExamPageState extends State<ExamPage>
                               ),
                             ),
                             const SizedBox(height: 6),
-                            Text('جميع الحقوق محفوظة © 2026',
-                                style: cairo(
-                                  fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.55),
-                                )
-                                ),
-                                const SizedBox(height: 4),
-                            Text('تم التطوير بواسطة: محمد بدر الدين البلال',
-                                style: cairo(
-                                  fontSize: 13,
-                                  color: Colors.white.withValues(alpha: 0.55),
-                                )
-                                ),
-                                
+                            Text(
+                              'جميع الحقوق محفوظة © 2026',
+                              style: cairo(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.55),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'تم التطوير بواسطة: محمد بدر الدين البلال',
+                              style: cairo(
+                                fontSize: 13,
+                                color: Colors.white.withValues(alpha: 0.55),
+                              ),
+                            ),
                           ],
                         ),
                       ),

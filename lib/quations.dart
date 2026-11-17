@@ -33,7 +33,6 @@ class _HomeState extends State<Home> {
 
     final isCorrect = option == questionBrain.getQuestionCorrect();
 
-    // 🔊 تشغيل الصوت المناسب
     if (isCorrect) {
       AudioService.playCorrect();
     } else {
@@ -56,7 +55,6 @@ class _HomeState extends State<Home> {
 
       questionBrain.reset();
 
-      // 🎆 أطلق الألعاب النارية في شاشة تجهيز النتيجة
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => _ResultPreparationScreen(
@@ -78,18 +76,8 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
-    final total = questionBrain.totalQuestions;
-    final questionNumber = questionBrain.questionIndex + 1;
-    final progress = total == 0
-        ? 0.0
-        : (questionBrain.answeredQuestions / total).clamp(0.0, 1.0);
-
-    final options = [
-      questionBrain.getQestionOptin1(),
-      questionBrain.getQestionOptin2(),
-      questionBrain.getQestionOptin3(),
-      questionBrain.getQestionOptin4(),
-    ];
+    // التحقق من عرض الشاشة (للأجهزة اللوحية والويب)
+    final isWide = MediaQuery.of(context).size.width >= 800;
 
     return Directionality(
       textDirection: TextDirection.rtl,
@@ -109,15 +97,12 @@ class _HomeState extends State<Home> {
           centerTitle: true,
           elevation: 0,
           actions: [
-            // 🔊 زر كتم / تشغيل الصوت
             ValueListenableBuilder<bool>(
               valueListenable: AudioService.muted,
               builder: (context, isMuted, _) {
                 return IconButton(
                   tooltip: isMuted ? 'تشغيل الصوت' : 'كتم الصوت',
-                  icon: Icon(
-                    isMuted ? Icons.volume_off : Icons.volume_up,
-                  ),
+                  icon: Icon(isMuted ? Icons.volume_off : Icons.volume_up),
                   onPressed: () {
                     AudioService.muted.value = !isMuted;
                     HapticFeedback.selectionClick();
@@ -133,63 +118,51 @@ class _HomeState extends State<Home> {
             ),
           ],
         ),
+        // المحتوى الأساسي
         body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minHeight: constraints.maxHeight - 40,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildProgressCard(questionNumber, total, progress),
-                      const SizedBox(height: 14),
-                      _buildQuestionCard(questionNumber),
-                      _buildFeedbackBanner(),
-                      const SizedBox(height: 16),
-                      ...options.map(_buildOption),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+          child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
         ),
+        
+        // ✅ الزر ثابت في الأسفل (يظهر دائماً ولا يختفي مع التمرير)
         bottomNavigationBar: _answeredCurrentQuestion
             ? SafeArea(
-                minimum: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: SizedBox(
-                  height: 56,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      HapticFeedback.selectionClick();
-                      _goToNext();
-                    },
-                    icon: Icon(
-                      questionBrain.isFinished()
-                          ? Icons.flag_outlined
-                          : Icons.arrow_back,
-                      size: 22,
-                    ),
-                    label: Text(
-                      questionBrain.isFinished()
-                          ? 'عرض النتيجة'
-                          : 'السؤال التالي',
-                      style: cairo(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: emerald,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 600),
+                    child: SizedBox(
+                      height: 56,
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          HapticFeedback.selectionClick();
+                          _goToNext();
+                        },
+                        icon: Icon(
+                          questionBrain.isFinished()
+                              ? Icons.flag_outlined
+                              : Icons.arrow_back,
+                          size: 22,
+                        ),
+                        label: Text(
+                          questionBrain.isFinished()
+                              ? 'عرض النتيجة'
+                              : 'السؤال التالي',
+                          style: cairo(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: emerald,
+                          foregroundColor: Colors.white,
+                          elevation: 6, // إضافة ظل ليبرز الزر
+                          shadowColor: emerald.withOpacity(0.5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -199,6 +172,101 @@ class _HomeState extends State<Home> {
       ),
     );
   }
+
+  // ═══════════════════════════════════════════════════════
+  // 📱 تخطيط الهاتف (عمودي)
+  // ═══════════════════════════════════════════════════════
+  Widget _buildNarrowLayout() {
+    final total = questionBrain.totalQuestions;
+    final questionNumber = questionBrain.questionIndex + 1;
+    final progress = total == 0
+        ? 0.0
+        : (questionBrain.answeredQuestions / total).clamp(0.0, 1.0);
+
+    final options = [
+      questionBrain.getQestionOptin1(),
+      questionBrain.getQestionOptin2(),
+      questionBrain.getQestionOptin3(),
+      questionBrain.getQestionOptin4(),
+    ];
+
+    return SingleChildScrollView(
+      // مسافة سفلية كافية لكي لا يغطي الزر الثابت الخيار الأخير
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildProgressCard(questionNumber, total, progress),
+          const SizedBox(height: 14),
+          _buildQuestionCard(questionNumber),
+          _buildFeedbackBanner(),
+          const SizedBox(height: 16),
+          ...options.map(_buildOption),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 💻 تخطيط الويب/التابلت (عمودان)
+  // ═══════════════════════════════════════════════════════
+  Widget _buildWideLayout() {
+    final total = questionBrain.totalQuestions;
+    final questionNumber = questionBrain.questionIndex + 1;
+    final progress = total == 0
+        ? 0.0
+        : (questionBrain.answeredQuestions / total).clamp(0.0, 1.0);
+
+    final options = [
+      questionBrain.getQestionOptin1(),
+      questionBrain.getQestionOptin2(),
+      questionBrain.getQestionOptin3(),
+      questionBrain.getQestionOptin4(),
+    ];
+
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // العمود الأيمن (السؤال)
+              Expanded(
+                flex: 5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildProgressCard(questionNumber, total, progress),
+                    const SizedBox(height: 16),
+                    _buildQuestionCard(questionNumber),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 24),
+              // العمود الأيسر (الخيارات)
+              Expanded(
+                flex: 5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildFeedbackBanner(),
+                    const SizedBox(height: 12),
+                    ...options.map(_buildOption),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // 🧩 المكوّنات المشتركة
+  // ═══════════════════════════════════════════════════════
 
   Widget _buildProgressCard(int questionNumber, int total, double progress) {
     return Card(
@@ -224,7 +292,7 @@ class _HomeState extends State<Home> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: emerald.withValues(alpha: 0.10),
+                    color: emerald.withOpacity(0.10),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
@@ -279,8 +347,8 @@ class _HomeState extends State<Home> {
             Row(
               children: [
                 Container(
-                  width: 58,
-                  height: 58,
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -290,7 +358,7 @@ class _HomeState extends State<Home> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: emerald.withValues(alpha: 0.35),
+                        color: emerald.withOpacity(0.35),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -300,31 +368,31 @@ class _HomeState extends State<Home> {
                     child: Text(
                       '$questionNumber',
                       style: cairo(
-                        fontSize: 23,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'السؤال رقم $questionNumber',
                     style: cairo(
-                      fontSize: 15,
-                      color: darkText.withValues(alpha: 0.65),
+                      fontSize: 14,
+                      color: darkText.withOpacity(0.65),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             Text(
               questionBrain.getQestion(),
               style: cairo(
-                fontSize: 21,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
                 height: 1.6,
                 color: darkText,
@@ -343,14 +411,14 @@ class _HomeState extends State<Home> {
     final accentColor = isCorrect ? correctGreen : wrongRed;
 
     return Padding(
-      padding: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.only(top: 12, bottom: 4),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: accentColor.withValues(alpha: 0.10),
+          color: accentColor.withOpacity(0.10),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: accentColor.withValues(alpha: 0.35), width: 1.2),
+          border: Border.all(color: accentColor.withOpacity(0.35), width: 1.2),
         ),
         child: Row(
           children: [
@@ -404,7 +472,7 @@ class _HomeState extends State<Home> {
       trailing = Icons.highlight_off;
     } else {
       bg = Colors.white;
-      fg = darkText.withValues(alpha: 0.55);
+      fg = darkText.withOpacity(0.55);
       border = const Color(0xFFE5E7EB);
       opacity = 0.55;
     }
@@ -424,7 +492,7 @@ class _HomeState extends State<Home> {
                 ? const []
                 : [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
+                      color: Colors.black.withOpacity(0.05),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -438,7 +506,7 @@ class _HomeState extends State<Home> {
               onTap: isAnswered ? null : () => _handleAnswer(option),
               child: Padding(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
                 child: Row(
                   children: [
                     Expanded(
@@ -446,7 +514,7 @@ class _HomeState extends State<Home> {
                         option,
                         textAlign: TextAlign.right,
                         style: cairo(
-                          fontSize: 17,
+                          fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: fg,
                         ),
@@ -454,7 +522,7 @@ class _HomeState extends State<Home> {
                     ),
                     if (trailing != null) ...[
                       const SizedBox(width: 10),
-                      Icon(trailing, color: fg, size: 24),
+                      Icon(trailing, color: fg, size: 22),
                     ],
                   ],
                 ),
@@ -468,7 +536,7 @@ class _HomeState extends State<Home> {
 }
 
 // ═══════════════════════════════════════════════════════════
-// ⏳ شاشة التجهيز — نُشغّل فيها الألعاب النارية
+// بقية الكود (شاشة التجهيز والنتيجة) كما هو دون تغيير ...
 // ═══════════════════════════════════════════════════════════
 class _ResultPreparationScreen extends StatefulWidget {
   const _ResultPreparationScreen({
@@ -495,8 +563,6 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
   @override
   void initState() {
     super.initState();
-
-    // 🎆 صوت الألعاب النارية يبدأ فورًا عند الوصول
     AudioService.playFireworks();
 
     _controller = AnimationController(
@@ -565,9 +631,6 @@ class _ResultPreparationScreenState extends State<_ResultPreparationScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// 🏆 شاشة النتيجة النهائية (كما هي + نجوم)
-// ═══════════════════════════════════════════════════════════
 class _QuizResultScreen extends StatelessWidget {
   const _QuizResultScreen({
     required this.correctAnswers,
@@ -614,12 +677,13 @@ class _QuizResultScreen extends StatelessWidget {
         body: SafeArea(
           child: Center(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
+                constraints: const BoxConstraints(maxWidth: 500),
                 child: Card(
                   color: warmWhite,
-                  elevation: 3,
+                  elevation: 4,
+                  shadowColor: Colors.black.withOpacity(0.1),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),
@@ -628,47 +692,46 @@ class _QuizResultScreen extends StatelessWidget {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.mosque, size: 60, color: emerald),
-                        const SizedBox(height: 12),
+                        const Icon(Icons.mosque, size: 50, color: emerald),
+                        const SizedBox(height: 8),
                         Text(
                           'اختبار ديني',
                           style: amiri(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: deepGreen,
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 12),
                         Text(
                           'أحسنت! لقد أكملت المسابقة',
                           textAlign: TextAlign.center,
                           style: cairo(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: darkText,
                           ),
                         ),
-                        const SizedBox(height: 22),
+                        const SizedBox(height: 20),
                         SizedBox(
-                          width: 150,
-                          height: 150,
+                          width: 130,
+                          height: 130,
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
                               SizedBox.expand(
                                 child: CircularProgressIndicator(
                                   value: safePercentage,
-                                  strokeWidth: 12,
-                                  backgroundColor:
-                                      const Color(0xFFE2E8E2),
-                                  valueColor: const AlwaysStoppedAnimation(
-                                      emerald),
+                                  strokeWidth: 10,
+                                  backgroundColor: const Color(0xFFE2E8E2),
+                                  valueColor:
+                                      const AlwaysStoppedAnimation(emerald),
                                 ),
                               ),
                               Text(
                                 '${percentage.toStringAsFixed(1)}%',
                                 style: cairo(
-                                  fontSize: 26,
+                                  fontSize: 24,
                                   fontWeight: FontWeight.bold,
                                   color: deepGreen,
                                 ),
@@ -676,14 +739,12 @@ class _QuizResultScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        // ⭐ نجوم
+                        const SizedBox(height: 12),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(3, (i) {
                             return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 3),
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
                               child: Icon(
                                 i < starCount
                                     ? Icons.star_rounded
@@ -691,28 +752,43 @@ class _QuizResultScreen extends StatelessWidget {
                                 color: i < starCount
                                     ? gold
                                     : Colors.grey.shade300,
-                                size: 38,
+                                size: 36,
                               ),
                             );
                           }),
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
                         Text(
                           evaluation,
                           textAlign: TextAlign.center,
                           style: cairo(
-                            fontSize: 21,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: emerald,
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        _scoreRow('الإجابات الصحيحة', correctAnswers,
-                            color: correctGreen),
-                        _scoreRow('الإجابات الخاطئة', incorrectAnswers,
-                            color: wrongRed),
-                        _scoreRow('مجموع الأسئلة', totalQuestions,
-                            color: darkText),
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                                color: const Color(0xFFE2E8E2), width: 1),
+                          ),
+                          child: Column(
+                            children: [
+                              _scoreRow('الإجابات الصحيحة', correctAnswers,
+                                  color: correctGreen),
+                              const Divider(height: 16),
+                              _scoreRow('الإجابات الخاطئة', incorrectAnswers,
+                                  color: wrongRed),
+                              const Divider(height: 16),
+                              _scoreRow('مجموع الأسئلة', totalQuestions,
+                                  color: darkText),
+                            ],
+                          ),
+                        ),
                         const SizedBox(height: 24),
                         SizedBox(
                           width: double.infinity,
@@ -723,7 +799,7 @@ class _QuizResultScreen extends StatelessWidget {
                             label: Text(
                               'العودة للرئيسية',
                               style: cairo(
-                                fontSize: 17,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.white,
                               ),
@@ -731,7 +807,7 @@ class _QuizResultScreen extends StatelessWidget {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: deepGreen,
                               foregroundColor: Colors.white,
-                              minimumSize: const Size.fromHeight(52),
+                              minimumSize: const Size.fromHeight(50),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -747,14 +823,14 @@ class _QuizResultScreen extends StatelessWidget {
                             label: Text(
                               'إعادة المسابقة',
                               style: cairo(
-                                fontSize: 17,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 color: deepGreen,
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: deepGreen,
-                              minimumSize: const Size.fromHeight(52),
+                              minimumSize: const Size.fromHeight(50),
                               side: const BorderSide(color: emerald),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -775,22 +851,19 @@ class _QuizResultScreen extends StatelessWidget {
   }
 
   Widget _scoreRow(String label, int value, {required Color color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: cairo(fontSize: 16, color: darkText)),
-          Text(
-            '$value',
-            style: cairo(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: cairo(fontSize: 15, color: darkText)),
+        Text(
+          '$value',
+          style: cairo(
+            fontSize: 17,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
